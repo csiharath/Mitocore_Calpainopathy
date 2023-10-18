@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from cobra.flux_analysis import flux_variability_analysis
+from cobra.flux_analysis.parsimonious import pfba
+import cobra
 
 
 def get_sum_fluxes(metabolite):
@@ -31,7 +33,7 @@ def get_fluxes_from_mitocore_metabolite(metabolite, model):
 	métabolites, et fais la somme des flux par sous système
 	"""
 	summarylines = str(metabolite.summary()).split("\n")
-	print(metabolite.summary())
+	# print(metabolite.summary())
 	stop = 0
 	i = 0
 	dictflux = dict()
@@ -68,7 +70,7 @@ def define_boundary_and_run_model(model, glucose_upper_bound, FA_upper_bound,
 	lactate_upper_bound=0, atp_value=1000,
 	glucose_id="GLCt1r", FA_id="HDCAtr", O2_id="O2t", Acetoacetate_id="ACACt2",hydroxybutyrate_id="BHBt", lactate_id="L_LACt2r", OF="OF_ATP_MitoCore",
 	glycolyse_target_fonction="PGM", beta_oxydation_target_fonction="r0732", ketone_bodies_target_fonction="BDHm", leucine_target_fonction="LEUTAm", isoleucine_target_fonction="ILETAm",
-	acetyl_CoA="accoa_m"):
+	acetyl_CoA="accoa_m", FVA=False):
 	"""
 	fonction qui fait tourner un modèle avec des valeurs d'entrées de métabolites
 	principaux choisies. Entrée d'oxygene,Glucose et acide gras requis.
@@ -79,6 +81,7 @@ def define_boundary_and_run_model(model, glucose_upper_bound, FA_upper_bound,
 	# model.reactions.r0732.bounds = (5.257609e-01,1000)
 
 	# Récupération des réactions
+	
 	glucose_reaction = model.reactions.get_by_id(glucose_id)
 	FA_reaction = model.reactions.get_by_id(FA_id)
 	O2_reaction = model.reactions.get_by_id(O2_id)
@@ -101,11 +104,20 @@ def define_boundary_and_run_model(model, glucose_upper_bound, FA_upper_bound,
 		OF_ATP_reaction.upper_bound = atp_value
 		# OF_ATP_reaction.bounds=(atp_value, atp_value)
 
+	# fva
+	if FVA :
+		fva = flux_variability_analysis(model)
+	# if calpain:
+	# 	print(fva.loc['LDH_L']['minimum'])
+	# 	model.reactions.LDH_L.upper_bound = fva.loc['LDH_L']['minimum']
+	
 	# calcul de la solution
 	solution = model.optimize()
+	# solution = pfba(model)
+
 	# récupération des valeurs de flux de chaque voie métabolique
 	dict_voie_metabolique = dict()
-	dict_voie_metabolique["glycolyse"]=abs(model.reactions.get_by_id(glycolyse_target_fonction).flux)
+	dict_voie_metabolique["glycolysis"]=abs(model.reactions.get_by_id(glycolyse_target_fonction).flux)
 	dict_voie_metabolique["beta oxydation"]=abs(model.reactions.get_by_id(beta_oxydation_target_fonction).flux)
 	dict_voie_metabolique["ketone bodies"]=abs(model.reactions.get_by_id(ketone_bodies_target_fonction).flux)
 	dict_voie_metabolique["leucine degradation"]=abs(model.reactions.get_by_id(leucine_target_fonction).flux)
@@ -116,13 +128,14 @@ def define_boundary_and_run_model(model, glucose_upper_bound, FA_upper_bound,
 	dict_accoa = get_fluxes_from_mitocore_metabolite(model.metabolites.get_by_id(acetyl_CoA),model)
 	dict_atp = get_fluxes_from_mitocore_metabolite(model.metabolites.get_by_id("atp_c"),model)
 
-	# fva
-	fva = flux_variability_analysis(model)
 
-	return (dict_accoa, dict_voie_metabolique, model, solution, dict_atp, fva)
+	if FVA:
+		return (dict_accoa, dict_voie_metabolique, model, solution, dict_atp, fva)
+	else:
+		return (dict_accoa, dict_voie_metabolique, model, solution, dict_atp)
 
 
-def plot_voie_metabolique_ou_accoa(dict_results, nom_graph, accoa=False):
+def plot_voie_metabolique_ou_accoa(dict_results, nom_graph, accoa=False, prop=False):
 	"""
 	fonction qui plot les résultats produits par la fonction define_boundary_and_run_model
 	il faut lui donner un dictionnaire de dictionnaire résultats
@@ -134,14 +147,14 @@ def plot_voie_metabolique_ou_accoa(dict_results, nom_graph, accoa=False):
 	list_ketogenesis_leucine_degradation = []
 	list_FA_metabolism = []
 	list_Glycolysis = []
-	list_intensité = []
+	list_intensite = []
 	# changement des clé du dictionnaire en fonction de si on analyse l'accoa ou les voies métaboliques
 	if not accoa:
 		cle_isoleucine_degradation = "isoleucine degradation"
 		cle_ketone_bodies = 'ketone bodies'
 		cle_leucine_degradation = 'leucine degradation'
 		cle_beta_oxydation = 'beta oxydation'
-		cle_glycolyse = "glycolyse"
+		cle_glycolyse = "glycolysis"
 	else:
 		cle_isoleucine_degradation = "Isoleucine degradation"
 		cle_ketone_bodies = 'FA and ketone body metabolism / Ketogenesis'
@@ -192,43 +205,52 @@ def plot_voie_metabolique_ou_accoa(dict_results, nom_graph, accoa=False):
 			list_Glycolysis = [0, 0, 0]
 			pass
 
-		list_intensité.append(intensité)
+		list_intensite.append(intensité)
 
 	list_isoleucine_degration = np.array(list_isoleucine_degration)
 	list_ketone_bodies = np.array(list_ketone_bodies)
 	list_ketogenesis_leucine_degradation = np.array(list_ketogenesis_leucine_degradation)
 	list_FA_metabolism = np.array(list_FA_metabolism)
 	list_Glycolysis = np.array(list_Glycolysis)
-	list_intensité = np.array(list_intensité)
-	print(list_intensité)
+	list_intensite = np.array(list_intensite)
+	print(list_intensite)
 
 	# width = 0.5
+	plt.figure(figsize=(3,5))
 	try:
-		plt.bar(list_intensité, list_Glycolysis, color='#DCCCA3', label='glycolyse')
+		plt.bar(list_intensite, list_Glycolysis, color='#024547', label='glycolysis') #DCCCA3 
 	except ValueError:
 		pass
 	try:
-		plt.bar(list_intensité, list_FA_metabolism, bottom=list_Glycolysis, color='#824C71', label='FA metabolism')
+		plt.bar(list_intensite, list_FA_metabolism, bottom=list_Glycolysis, color='#037E81', label='FA metabolism') #824C71 
 	except ValueError:
 		pass
 	try:
-		plt.bar(list_intensité, list_ketone_bodies, bottom=list_FA_metabolism+list_Glycolysis, color='#90AA86', label='ketone bodies')
+		plt.bar(list_intensite, list_ketone_bodies, bottom=list_FA_metabolism+list_Glycolysis, color='#4CA051', label='ketone bodies') #90AA86 
 	except ValueError:
 		pass
 	try:
-		plt.bar(list_intensité, list_isoleucine_degration, bottom=list_FA_metabolism+list_Glycolysis+list_ketone_bodies, color='darkslategrey', label='isoleucine degradation')
+		plt.bar(list_intensite, list_isoleucine_degration, bottom=list_FA_metabolism+list_Glycolysis+list_ketone_bodies, color='#95C121', label='isoleucine degradation') #darkslategrey 
 	except ValueError:
 		pass
 	try:
-		plt.bar(list_intensité, list_ketogenesis_leucine_degradation, bottom=list_FA_metabolism+list_Glycolysis+list_ketone_bodies+list_isoleucine_degration, color='plum', label='leucine degradation')
+		plt.bar(list_intensite, list_ketogenesis_leucine_degradation, bottom=list_FA_metabolism+list_Glycolysis+list_ketone_bodies+list_isoleucine_degration, color='#D9E6B1', label='leucine degradation') #CEABB1 
 	except ValueError:
 		pass
-	plt.xlabel("intensité d'exercice")
-	if not accoa:
-		plt.ylabel("Flux")
+	plt.xlabel("Exercise intensity (VO2max percentage)", fontsize=13)
+	plt.xticks(fontsize=12)
+	plt.yticks(fontsize=12)
+	if not accoa and not prop:
+		plt.ylabel("Flux", fontsize=13)
+	elif prop:
+		plt.ylabel("ATP production pathways proportions", fontsize=13)
+		plt.legend(loc=(1.04, 0))
+		# plt.ylim((0, 1))
 	else:
-		plt.ylabel("pourcentage")
-	plt.legend(loc=(1.04, 0))
+		plt.ylabel("Percentage", fontsize=13)
+		plt.legend(loc=(1.04, 0))
+		plt.ylim = 1
+	
 	plt.savefig('Plots/'+nom_graph, bbox_inches='tight')
 	plt.show()
 	return dict_results
@@ -276,7 +298,7 @@ def run_model_calpainopathy(model,glucose_upper_bound,FA_upper_bound,O2_upper_bo
 			mitocore_id=data[1].strip('"').strip()
 			#print(mitocore_id)
 			fold_change=data[2].strip('"')
-			multiplicateur=data[3].strip('"')
+			multiplicateur=data[3].split('"')[1]
 			if multiplicateur == "Hausse":
 				multiplicateur=2.0
 			if multiplicateur=="Baisse" :
@@ -301,7 +323,10 @@ def run_model_calpainopathy(model,glucose_upper_bound,FA_upper_bound,O2_upper_bo
 					# print(r.flux)
 					if r.flux != 0.0 :
 						#print(float(r.flux)*float(multiplicateur))
+						print(r.flux)
+						print(multiplicateur)
 						r.upper_bound=max(float(r.flux)*float(multiplicateur),0)
+						print()
 					#print(r.upper_bound)
 					count+=1
 
@@ -317,7 +342,9 @@ def run_model_calpainopathy(model,glucose_upper_bound,FA_upper_bound,O2_upper_bo
 	#récupération des pourcentagest de l'acétyl-CoA produit par différentes voies métaboliques.
 	dict_accoa=get_fluxes_from_mitocore_metabolite(model.metabolites.get_by_id(acetyl_CoA),model)
 	#
-	return (dict_accoa,dict_voie_metabolique,model,solution)
+	fva = flux_variability_analysis(model)
+	
+	return (dict_accoa,dict_voie_metabolique,model,solution,fva)
 
 # def get_boundaries_and_run_model_calpain(model,glucose_upper_bound,FA_upper_bound,O2_upper_bound,Acetoacetate_upper_bound=0,hydroxybutyrate_upper_bound=0,
 # 	lactate_upper_bound=0, atp_value=1000,
