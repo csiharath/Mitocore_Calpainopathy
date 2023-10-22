@@ -1,5 +1,24 @@
 # Mitocore_calpainopathy
 
+## Installation 
+
+First, you need to have conda/mamba/anaconda
+
+Then, you can follow the code below:
+
+```bash
+ENV_NAME="mitoenv"
+# Renme it if you prefer
+
+conda env create -n $ENV_NAME -f requirements.yml 
+# This will create a new env with all depedencies specified in 'requirements.yml'
+# Use 'mamba' instead of 'conda' or append '--solver libmamba', this will speed up the process
+
+conda run -n $ENV_NAME python -m ipykernel install --user --name $ENV_NAME
+# This will install the env for Jupyter
+
+conda activate $ENV_NAME
+```
 
 
 ## Getting started

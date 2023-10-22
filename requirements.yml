@@ -1,0 +1,15 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - cobra
+  - escher
+  - ipykernel
+  - jupyter
+  - markupsafe == 2.0.1
+  - matplotlib
+  - numpy <= 1.23
+  - pandas
+  - plotly
+  - python == 3.8
+  - seaborn
