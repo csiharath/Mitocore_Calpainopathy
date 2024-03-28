@@ -3,7 +3,6 @@
 ## Table of content <!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [This project was implemented in python using COBRApy methods such as:](#this-project-was-implemented-in-python-using-cobrapy-methods-such-as)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Notebooks](#notebooks)
@@ -17,9 +16,10 @@
 
 Energy metabolism is a complex process involving the conversion and use of energy in the body, and can undergo modifications depending on conditions (age, activity, health...). Neuromuscular diseases are a group of disorders affecting the motor unit composed of a motor neuron, its axon and all the muscle fibers it innervates, and, as a side consequence, affecting the metabolism of muscle cells, responsible of contractions. Modelling metabolic networks aids in understanding changes happening due to physical activity, and to take account of the known regulations caused by different factors, such as diseases.This project aims to implement a method to build a constraint-based computer model, illustrating altered energy metabolism in neuromuscular diseases, taking the example of calpainopathy.
 
-
 This project was implemented in python using COBRApy methods such as:
-- 
+- `model.optimize()`: running Flux Balance Analysis (FBA) by maximizing (or minimizing) an objective function.
+- `cobra.flux_analysis.pfba(model)`: running parsimonious FBA (pFBA) which gives the optimal growth rate, but minimizes the total sum of flux.
+- `cobra.flux_analysis.flux_variability_analysis(model)`: gives a range of values for each reaction, while maintaining the same optimum.
 
 ## Installation 
 
@@ -44,7 +44,7 @@ conda activate $ENV_NAME
 ## Usage
 ### Notebooks
 
-- Atleration_model.ipynb
+- `Atleration_model.ipynb`
 
 Calculates new bounds from known regulations and muscle activity of healthy cells, and creates a new model representing the studied neuromuscular disease.
 
@@ -52,7 +52,7 @@ Calculates new bounds from known regulations and muscle activity of healthy cell
 jupyter notebook code/Alteration_model.ipynb
 ```
 
-- Ateration_model_study.ipynb
+- `Ateration_model_study.ipynb`
   
 Studies different set of paramaters in order to find possible compensation.
 
@@ -60,7 +60,7 @@ Studies different set of paramaters in order to find possible compensation.
 jupyter notebook code/Alteration_model_study.ipynb
 ```
 
-- comparison_control.ipynb
+- `comparison_control.ipynb`
 
 Compares control and alterations models (with the same uptakes parameters, but could be change according results found with `Alteration_model.ipynb`)
 ```bash
@@ -69,7 +69,7 @@ jupyter notebook code/comparison_control.ipynb
 
 ### Library
 
-- metabolic_analysis_library.py
+- `metabolic_analysis_library.py`
   
 Library of functions used to build and analyse healthy and deseased models, specifically during physical exercise.
 This library contains functions to run FBA or different method of analysis (pFBA, FVA) on models during physical exercise, build a dysregulated model, build data visualisation, and plot results.
